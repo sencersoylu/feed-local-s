@@ -162,7 +162,7 @@ const machineUpdate = (data) => {
 
     sequelize
         .query(
-            "UPDATE machines set last_seen = datetime('now') where machine = :machine", {
+            "UPDATE machines set last_seen = datetime('now'), line = :line where machine = :machine", {
                 replacements: {
                     machine: data.DEVICE + 100,
                     line: line
