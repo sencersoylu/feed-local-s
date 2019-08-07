@@ -171,7 +171,7 @@ const machineUpdate = (data) => {
             }
         )
         .then(data => {
-            console.log(`${line} Hattında Stok Değiştirildi ${raw[0].STOKNO} -- ${raw[0].MLZ_ADI}`);
+            //console.log(`${line} Hattında Stok Değiştirildi ${data[0].STOKNO} -- ${data[0].MLZ_ADI}`);
             return data;
         });
 
