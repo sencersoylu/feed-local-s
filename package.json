@@ -1,0 +1,32 @@
+{
+  "name": "feed-local",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "nodemon --exec babel-node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^0.19.0",
+    "babel-cli": "^6.26.0",
+    "cors": "^2.8.5",
+    "express": "^4.17.1",
+    "morgan": "^1.9.1",
+    "nodemon": "^1.19.1",
+    "sequelize": "^5.12.3",
+    "sequelize-cli": "^5.5.0",
+    "serialport": "^7.1.5",
+    "socket.io": "^2.0.4",
+    "sqlite3": "^4.0.9"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.5.5",
+    "@babel/core": "^7.5.5",
+    "@babel/node": "^7.5.5",
+    "@babel/preset-env": "^7.5.5"
+  },
+  "keywords": [],
+  "description": ""
+}
