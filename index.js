@@ -190,7 +190,7 @@ const machineUpdate = async (data) => {
         return 0;
 
     if (data.status == 1) {
-        let data = await lineStatus();
+        let data = await lines();
         console.log(`${line} Hattına ${data.DEVICE + 100} Makinesi Bağlandı`);
         io.sockets.emit('attach', {
             macihne: (data.DEVICE + 100).toString(),
@@ -280,7 +280,7 @@ const deviceUpdate = async () => {
                     )
                     .then(async () => {
 
-                        let data = await lineStatus();
+                        let data = await lines();
 
                         io.sockets.emit('detach', {
                             machine: xdata.machine,
