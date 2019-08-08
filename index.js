@@ -193,7 +193,7 @@ const machineUpdate = async (data) => {
         let data = await lines();
         console.log(`${line} Hattına ${data.DEVICE + 100} Makinesi Bağlandı`);
         io.sockets.emit('attach', {
-            macihne: (data.DEVICE + 100).toString(),
+            machine: (data.DEVICE + 100).toString(),
             line: line,
             lines: data
         });
