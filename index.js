@@ -190,12 +190,12 @@ const machineUpdate = async (data) => {
         return 0;
 
     if (data.status == 1) {
-        let data = await lines();
+        let lineslist = await lines();
         console.log(`${line} Hattına ${data.DEVICE + 100} Makinesi Bağlandı`);
         io.sockets.emit('attach', {
             machine: (data.DEVICE + 100).toString(),
             line: line,
-            lines: data
+            lines: lineslist
         });
     } else if (data.status == 2) {
         console.log(`${line} Hattına ${data.DEVICE + 100} Makinesi Bağlı Durumda`);
