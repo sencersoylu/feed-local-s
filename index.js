@@ -26,7 +26,14 @@ app.use(logger('dev'));
 app.listen(API_PORT, () => console.log(`Listening on port ${API_PORT}`));
 
 app.get('/', function (req, res) {
-    res.send('OK');
+    sequelize.query("SELECT * FROM `machines`", {
+            type: sequelize.QueryTypes.SELECT
+        })
+        .then(data => {
+            res.json(data);
+            // We don't need spread here, since only the results will be returned for select queries
+        })
+
 });
 
 let raw_status = 0;
@@ -122,7 +129,7 @@ const rawChange = (raw, line) => {
 
     sequelize
         .query(
-            "UPDATE lines set raw_material_name = :stock_name, raw_material_code = :stock_code, last_change = datetime('now') where line = :line", {
+            "UPDATE lines set raw_material_name = :stock_name, raw_material_code = :stock_code, last_change = datetime('now','localtime') where line = :line", {
                 replacements: {
                     stock_code: raw[0].STOKNO,
                     stock_name: raw[0].MLZ_ADI,
@@ -162,9 +169,9 @@ const machineUpdate = (data) => {
 
     sequelize
         .query(
-            "UPDATE machines set last_seen = datetime('now'), line = :line where machine = :machine", {
+            "UPDATE machines set last_seen = datetime('now','localtime'), line = :line where machine = :machine", {
                 replacements: {
-                    machine: data.DEVICE + 100,
+                    machine: (data.DEVICE + 100).toString(),
                     line: line
                 },
                 type: sequelize.QueryTypes.UPDATE
