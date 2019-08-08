@@ -122,7 +122,7 @@ const rawChange = (raw, line) => {
 
     sequelize
         .query(
-            "UPDATE lines set raw_material_name = :stock_name, raw_material_code = :stock_code, last_change = datetime('now') where line = :line", {
+            "UPDATE lines set raw_material_name = :stock_name, raw_material_code = :stock_code, last_change = datetime('now','localtime') where line = :line", {
                 replacements: {
                     stock_code: raw[0].STOKNO,
                     stock_name: raw[0].MLZ_ADI,
@@ -162,7 +162,7 @@ const machineUpdate = (data) => {
 
     sequelize
         .query(
-            "UPDATE machines set last_seen = datetime('now'), line = :line, status = 1 where machine = :machine", {
+            "UPDATE machines set last_seen = datetime('now','localtime'), line = :line, status = 1 where machine = :machine", {
                 replacements: {
                     machine: data.DEVICE + 100,
                     line: line
