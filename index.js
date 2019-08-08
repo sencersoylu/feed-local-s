@@ -6,14 +6,24 @@ import Cors from 'cors';
 import bodyParser from 'body-parser';
 import logger from 'morgan';
 import Sequelize from 'sequelize';
+import http from 'http';
+
+import SocketIO from 'socket.io';
+
+import _ from 'lodash';
 
 import axios from 'axios';
 
 const app = express();
+let server = http.Server(app);
 
 const sequelize = new Sequelize('sqlite:feed.db');
 
 const API_PORT = process.env.API_PORT || 3000;
+
+let io = new SocketIO(server);
+let connections = [];
+
 
 app.use(Cors());
 app.use(bodyParser.urlencoded({
@@ -23,7 +33,7 @@ app.use(bodyParser.urlencoded({
 app.use(bodyParser.json());
 app.use(logger('dev'));
 
-app.listen(API_PORT, () => console.log(`Listening on port ${API_PORT}`));
+server.listen(API_PORT, () => console.log(`Listening on port ${API_PORT}`));
 
 app.get('/', function (req, res) {
     sequelize.query("SELECT * FROM `machines`", {
@@ -38,6 +48,16 @@ app.get('/', function (req, res) {
 
 let raw_status = 0;
 let lines_readed = "";
+
+
+io.sockets.on('connection', (socket) => {
+    connections.push(socket);
+    console.log(' %s sockets is connected', connections.length);
+
+    socket.on('disconnect', () => {
+        connections.splice(connections.indexOf(socket), 1);
+    });
+});
 
 
 SerialPort.list(function (err, ports) {
@@ -93,6 +113,7 @@ SerialPort.list(function (err, ports) {
                             console.log(`${barcode} Hat Barkodu Okutuldu`);
                             lines_readed = barcode;
                             raw_status = 1;
+                            io.sockets.emit('linebarcode', barcode);
                         }
                     } else if (raw_status == 1) {
                         axios.post('http://10.46.5.112:3001/feed/GetStock', {
@@ -102,12 +123,19 @@ SerialPort.list(function (err, ports) {
                                 console.log(response.data);
                                 rawChange(response.data, lines_readed);
                                 raw_status = 0;
+                                io.sockets.emit('rawbarcode', {
+                                    raw: response.data,
+                                    line: lines_readed
+                                });
+
                             })
                             .catch(function (error) {
-                                //console.log(error.response.status);
+                                //console.log(error);
                                 if (error.response.status == "404") {
                                     if (error.response.data == "NOK")
                                         console.log("Böyle bir stok bulunamadı");
+                                    raw_status = 0;
+
                                 }
                                 raw_status = 0;
                             });
@@ -145,7 +173,7 @@ const rawChange = (raw, line) => {
 
 }
 
-const machineUpdate = (data) => {
+const machineUpdate = async (data) => {
 
     let line = "";
     if (data.BASE == "1")
@@ -162,14 +190,20 @@ const machineUpdate = (data) => {
         return 0;
 
     if (data.status == 1) {
+        let data = await lineStatus();
         console.log(`${line} Hattına ${data.DEVICE + 100} Makinesi Bağlandı`);
+        io.sockets.emit('attach', {
+            macihne: (data.DEVICE + 100).toString(),
+            line: line,
+            lines: data
+        });
     } else if (data.status == 2) {
         console.log(`${line} Hattına ${data.DEVICE + 100} Makinesi Bağlı Durumda`);
     }
 
     sequelize
         .query(
-            "UPDATE machines set last_seen = datetime('now','localtime'), line = :line where machine = :machine", {
+            "UPDATE machines set last_seen = datetime('now','localtime'), line = :line, status = 1 where machine = :machine", {
                 replacements: {
                     machine: (data.DEVICE + 100).toString(),
                     line: line
@@ -184,7 +218,91 @@ const machineUpdate = (data) => {
 
 }
 
+const lines = async () => {
 
+    let lines = await sequelize
+        .query(
+            "select * from lines;", {
+                type: sequelize.QueryTypes.SELECT
+            }
+        );
+
+    return lines;
+
+
+}
+
+
+
+
+const machines = async () => {
+
+    const result = await sequelize.query("select * from machines ;", {
+        type: sequelize.QueryTypes.SELECT,
+    });
+
+    return result;
+
+}
+
+const listUpdate = async () => {
+
+    let templines = await lines();
+    let listmachines = await machines();
+
+    io.sockets.emit('update', {
+        lines: templines,
+        machines: listmachines
+    });
+
+}
+
+const deviceUpdate = async () => {
+
+
+
+    sequelize
+        .query(
+            "SELECT machine FROM machines WHERE status = 1 and last_seen < datetime(datetime('now','localtime'),'-1 minutes');", {
+                type: sequelize.QueryTypes.SELECT
+            }
+        ).then((data) => {
+            data.map(async (xdata) => {
+
+                sequelize
+                    .query(
+                        "UPDATE machines set status = 0  where machine = :machine", {
+                            replacements: {
+                                machine: xdata.machine
+                            },
+                            type: sequelize.QueryTypes.UPDATE
+                        }
+                    )
+                    .then(async () => {
+
+                        let data = await lineStatus();
+
+                        io.sockets.emit('detach', {
+                            machine: xdata.machine,
+                            lines: data
+                        });
+                        console.log(`${xdata.machine} Bulunamadı`);
+                    });
+
+
+
+
+            })
+
+        });
+
+
+
+}
+
+setInterval(listUpdate, 10000);
+
+setInterval(deviceUpdate, 5000);
 
 
 module.exports = app;
