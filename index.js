@@ -117,7 +117,7 @@ const machineUpdate = async data => {
 
   sequelize
     .query(
-      "UPDATE machines set last_seen = datetime('now','localtime'), line = :line, status = 1 where machine = :machine", {
+      "UPDATE machines set last_seen = datetime('now','localtime'), line = :line, status = 1 where id = :machine", {
         replacements: {
           machine: machine.toString(),
           line: line.line
