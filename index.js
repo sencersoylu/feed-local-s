@@ -349,5 +349,7 @@ const findAlter = async (barcode, arr) => {
 };
 
 setInterval(machineWork, 30000);
+setInterval(listUpdate, 30000);
+
 
 machineWork();
