@@ -41,7 +41,7 @@ let lines_readed = "";
 io.sockets.on("connection", socket => {
   connections.push(socket);
   console.log(" %s sockets is connected", connections.length);
-
+  listUpdate();
   socket.on("disconnect", () => {
     connections.splice(connections.indexOf(socket), 1);
   });
