@@ -31,6 +31,22 @@ const API_PORT = process.env.API_PORT || 3000;
 
 let io = new SocketIO(server);
 let connections = [];
+server.listen(API_PORT, () => console.log(`Listening on port ${API_PORT}`));
+
+
+
+let raw_status = 0;
+let lines_readed = "";
+
+io.sockets.on("connection", socket => {
+  connections.push(socket);
+  console.log(" %s sockets is connected", connections.length);
+
+  socket.on("disconnect", () => {
+    connections.splice(connections.indexOf(socket), 1);
+  });
+});
+
 
 app.use(Cors());
 app.use(
