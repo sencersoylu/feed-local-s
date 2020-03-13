@@ -464,14 +464,6 @@ const findAlter = async (barcode, arr) => {
   return result;
 };
 
-setInterval(machineWork, 30000);
-setInterval(listUpdate, 30000);
-
-setInterval(deviceUpdate, 30000);
-
-setInterval(checkStatus, 5000);
-
-machineWork();
 
 
 const checkStatus = () => {
@@ -482,9 +474,6 @@ const checkStatus = () => {
       type: sequelize.QueryTypes.SELECT
     })
     .then(data => {
-      if (data[0].x > 0) {
-        OUT1.writeSync(0);
-      } else OUT1.writeSync(1);
 
       sequelize
         .query(
@@ -502,9 +491,18 @@ const checkStatus = () => {
                 type: sequelize.QueryTypes.UPDATE
               })
               .then(data => {
-                return data;
+                //return data;
               });
           });
         });
     });
 };
+
+setInterval(machineWork, 30000);
+setInterval(listUpdate, 30000);
+
+setInterval(deviceUpdate, 30000);
+
+setInterval(checkStatus, 5000);
+
+machineWork();
