@@ -74,23 +74,11 @@ sport.on("data", async function (data) {
   console.log(barcode);
   if (raw_status == 0) {
     if (
-      barcode == "CA" ||
-      barcode == "CB" ||
-      barcode == "CC" ||
-      barcode == "CD" ||
-      barcode == "CE" ||
-      barcode == "CF" ||
-      barcode == "CG" ||
-      barcode == "CH" ||
-      barcode == "CI" ||
-      barcode == "CJ" ||
-      barcode == "CK" ||
-      barcode == "CL" ||
-      barcode == "CM" ||
-      barcode == "CN" ||
-      barcode == "CO" ||
-      barcode == "CP" ||
-      barcode == "CQ"
+      barcode == "A" ||
+      barcode == "B" ||
+      barcode == "C" ||
+      barcode == "D" ||
+      barcode == "E"
     ) {
       console.log(`${barcode} Hat Barkodu Okutuldu`);
       lines_readed = barcode;
@@ -479,5 +467,44 @@ const findAlter = async (barcode, arr) => {
 setInterval(machineWork, 30000);
 setInterval(listUpdate, 30000);
 
+setInterval(deviceUpdate, 30000);
+
+setInterval(checkStatus, 5000);
 
 machineWork();
+
+
+const checkStatus = () => {
+
+
+  sequelize
+    .query("select count(*) as x from machines where raw_status = 1;", {
+      type: sequelize.QueryTypes.SELECT
+    })
+    .then(data => {
+      if (data[0].x > 0) {
+        OUT1.writeSync(0);
+      } else OUT1.writeSync(1);
+
+      sequelize
+        .query(
+          "select id from machines where last_seen < Datetime('now', 'localtime','-1 minutes')", {
+            type: sequelize.QueryTypes.SELECT
+          }
+        )
+        .then(data => {
+          data.map(x => {
+            sequelize
+              .query("UPDATE machines set status = 2, line ='' where id = :id", {
+                replacements: {
+                  id: x.id
+                },
+                type: sequelize.QueryTypes.UPDATE
+              })
+              .then(data => {
+                return data;
+              });
+          });
+        });
+    });
+};
