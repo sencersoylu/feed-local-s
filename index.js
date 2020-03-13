@@ -55,6 +55,134 @@ app.use(
   })
 );
 
+
+let sport = new SerialPort("/dev/ttyACM0", {
+  baudRate: 9600
+});
+
+sport.on("open", function (err) {
+  console.log("Opened", "/dev/ttyACM0");
+});
+
+sport.on("error", function (err) {
+  console.log("Error: ", err.message, "/dev/ttyACM0");
+});
+
+sport.on("data", async function (data) {
+  //let buf = new Buffer.From(data);
+  const barcode = data.toString("utf8").trim();
+  console.log(barcode);
+  if (raw_status == 0) {
+    if (
+      barcode == "CA" ||
+      barcode == "CB" ||
+      barcode == "CC" ||
+      barcode == "CD" ||
+      barcode == "CE" ||
+      barcode == "CF" ||
+      barcode == "CG" ||
+      barcode == "CH" ||
+      barcode == "CI" ||
+      barcode == "CJ" ||
+      barcode == "CK" ||
+      barcode == "CL" ||
+      barcode == "CM" ||
+      barcode == "CN" ||
+      barcode == "CO" ||
+      barcode == "CP" ||
+      barcode == "CQ"
+    ) {
+      console.log(`${barcode} Hat Barkodu Okutuldu`);
+      lines_readed = barcode;
+      raw_status = 1;
+      io.sockets.emit("linebarcode", barcode);
+    }
+  } else if (raw_status == 1) {
+    let WORKS = await getLineWorks(lines_readed);
+
+    let arr = [];
+
+    WORKS.forEach(x => arr.push(x.ISEMRI_NO));
+
+    console.log(arr);
+
+    console.log(WORKS);
+
+    let alter = await findAlter(barcode, arr);
+    console.log(alter);
+
+    if (alter.length > 0) {
+      axios
+        .post("http://10.46.5.112:3001/feed/GetStock", {
+          STOCK_NO: alter[0].MALZEME_KODU
+        })
+        .then(function (response) {
+          //console.log(response.data);
+          rawChange(response.data, lines_readed);
+          raw_status = 0;
+          io.sockets.emit("rawbarcode", {
+            raw: response.data,
+            line: lines_readed
+          });
+        })
+        .catch(function (error) {
+          //console.log(error);
+          if (error.response.status == "404") {
+            if (error.response.data == "NOK")
+              console.log("Böyle bir stok bulunamadı");
+            raw_status = 0;
+          }
+          raw_status = 0;
+        });
+    } else {
+      axios
+        .post("http://10.46.5.112:3001/feed/GetStock", {
+          STOCK_NO: barcode
+        })
+        .then(function (response) {
+          //console.log(response.data);
+          rawChange(response.data, lines_readed);
+          raw_status = 0;
+          io.sockets.emit("rawbarcode", {
+            raw: response.data,
+            line: lines_readed
+          });
+        })
+        .catch(function (error) {
+          //console.log(error);
+          if (error.response.status == "404") {
+            if (error.response.data == "NOK")
+              console.log("Böyle bir stok bulunamadı");
+            raw_status = 0;
+          }
+          raw_status = 0;
+        });
+    }
+  }
+
+  //console.log(data.toString('utf8'));
+});
+
+const rawChange = (raw, line) => {
+  sequelize
+    .query(
+      "UPDATE lines set raw_material_name = :stock_name, raw_material_code = :stock_code, last_change = datetime('now','localtime') where line = :line", {
+        replacements: {
+          stock_code: raw[0].STOKNO,
+          stock_name: raw[0].MLZ_ADI,
+          line: line
+        },
+        type: sequelize.QueryTypes.UPDATE
+      }
+    )
+    .then(data => {
+      console.log(
+        `${line} Hattında Stok Değiştirildi ${raw[0].STOKNO} -- ${raw[0].MLZ_ADI}`
+      );
+      return data;
+    });
+};
+
 SerialPort.list(function (err, ports) {
   ports.forEach(function (port) {
     console.log(port.comName);
